@@ -18,6 +18,7 @@
 #include "servo_pkg/servo_mgr.hpp"
 #include "servo_pkg/led_mgr.hpp"
 #include <rclcpp/strategies/message_pool_memory_strategy.hpp>
+#include <rclcpp/strategies/allocator_memory_strategy.hpp>
 #include "deepracer_interfaces_pkg/msg/servo_ctrl_msg.hpp"
 #include "deepracer_interfaces_pkg/srv/get_calibration_srv.hpp"
 #include "deepracer_interfaces_pkg/srv/set_calibration_srv.hpp"
@@ -45,23 +46,22 @@ int main(int argc, char **argv) {
     auto ledMgr = std::make_unique<PWM::LedMgr>(node->get_logger());
     auto qos = rclcpp::QoS(rclcpp::KeepLast(1));
     qos.best_effort();
-    auto servoMsgStrategy = std::make_shared<rclcpp::strategies::message_pool_memory_strategy::MessagePoolMemoryStrategy<deepracer_interfaces_pkg::msg::ServoCtrlMsg, 1>>();
-    auto rawPWMMsgStrategy = std::make_shared<rclcpp::strategies::message_pool_memory_strategy::MessagePoolMemoryStrategy<deepracer_interfaces_pkg::msg::ServoCtrlMsg, 1>>();
+
+    // auto servoMsgStrategy = std::make_shared<rclcpp::strategies::message_pool_memory_strategy::MessagePoolMemoryStrategy<deepracer_interfaces_pkg::msg::ServoCtrlMsg, 1>>();
+    // auto rawPWMMsgStrategy = std::make_shared<rclcpp::strategies::message_pool_memory_strategy::MessagePoolMemoryStrategy<deepracer_interfaces_pkg::msg::ServoCtrlMsg, 1>>();
 
     auto sub_ = node->create_subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(SERVO_TOPIC,
                                                                                        qos,
                                                                                        std::bind(&PWM::ServoMgr::servoSubscriber,
                                                                                                  servoMgr.get(),
                                                                                                  std::placeholders::_1),
-                                                                                        rclcpp::SubscriptionOptions(),
-                                                                                        servoMsgStrategy);
+                                                                                        rclcpp::SubscriptionOptions());
     auto rawPWMsub_ = node->create_subscription<deepracer_interfaces_pkg::msg::ServoCtrlMsg>(RAW_PWM_TOPIC,
                                                                                        qos,
                                                                                        std::bind(&PWM::ServoMgr::rawPWMSubscriber,
                                                                                                  servoMgr.get(),
                                                                                                  std::placeholders::_1),
-                                                                                        rclcpp::SubscriptionOptions(),
-                                                                                        rawPWMMsgStrategy);
+                                                                                        rclcpp::SubscriptionOptions());
     auto servoCalServiceCbGrp_ = node->create_callback_group(rclcpp::callback_group::CallbackGroupType::Reentrant);                                                                                          
     rclcpp::Service<deepracer_interfaces_pkg::srv::SetCalibrationSrv>::SharedPtr servoCalService =
         node->create_service<deepracer_interfaces_pkg::srv::SetCalibrationSrv>(SET_CAL_SERVICE_NAME,
